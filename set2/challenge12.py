@@ -53,14 +53,7 @@ def pkcs7_remove(data):
     pad = ord(data[-1])
     return data[:-pad]
 
-def xor(a,b):
-    raw_a = a
-    raw_b = b
-    return "".join([chr(ord(raw_a[i])^ord(raw_b[i])) for i in range(len(raw_a))])
-
 def main():
-#    with open("11.html") as f:
-#        plaintext = f.read()
 
     #Detecting block size
     a = len(encryption_oracle("A"))
