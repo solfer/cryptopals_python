@@ -21,7 +21,7 @@ def pkcs7_remove(data):
 def pkcs7_validation(data, block_len=16):
     pad_size = ord(data[-1])
     padding = data[-pad_size:]
-    if len(set(padding)) != 1:
+    if len(set(padding)) != 1 or len(data)%block_len != 0:
         raise ValueError("Invalid padding")
         raise Exception("Bad padding")
     return data[:-pad_size]
