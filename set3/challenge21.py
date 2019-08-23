@@ -1,7 +1,5 @@
 #! /usr/bin/python
 
-import random
-
 # https://www.cryptopals.com/sets/2/challenges/21
 # Implement the MT19937 Mersenne Twister RNG
 
@@ -37,7 +35,7 @@ def extract_number():
         if index > n:
             #Error, generator was never seeded
             # Alternatively, seed with constant value; 5489 is used in reference C code
-            seed = 5489
+            seed_mt(5489)
         twist()
     
     y = MT[index]
@@ -65,8 +63,7 @@ def twist():
 
 
 def main():
-    seed_mt(5489)
-    random.seed(5489)
+    #seed_mt(5489)
     for i in range(3):
         print extract_number()
         #print random.randint(0,0xFFFFFFFF)
