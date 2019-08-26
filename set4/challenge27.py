@@ -4,8 +4,8 @@ from Crypto.Cipher import AES
 
 from random import randint
 
-# https://www.cryptopals.com/sets/2/challenges/16
-# CBC bitflipping attacks
+# https://www.cryptopals.com/sets/4/challenges/27
+# Recover the key from CBC with IV=Key
 
 
 def random_aes_key(blocksize=16):
