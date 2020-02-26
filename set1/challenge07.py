@@ -1,6 +1,7 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 from Crypto.Cipher import AES
+import base64
 
 # https://www.cryptopals.com/sets/1/challenges/7
 # AES in ECB mode
@@ -15,8 +16,8 @@ def main():
     with open("7.txt") as f:
         INPUT = "".join(f.readlines()).replace("\n","")
 
-    ciphertext = INPUT.decode("base64")
+    ciphertext = base64.b64decode(INPUT)
     plaintext = obj.decrypt(ciphertext)
-    print plaintext
+    print (plaintext)
 
 main()

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 # https://www.cryptopals.com/sets/1/challenges/6
 # Break repeating-key XOR
@@ -7,6 +7,8 @@
 
 ## https://crypto.stackexchange.com/questions/30209/developing-algorithm-for-detecting-plain-text-via-frequency-analysis
 # http://www.macfreek.nl/memory/Letter_Distribution
+
+import base64
 
 #TODO: Replace this with a dictionary
 english_freq = [
@@ -69,11 +71,15 @@ def brute(s):
 def hamming_distance(s1,s2):
     if len(s1) != len(s2):
         return None
-    return sum([bin(ord(s1[i])^ord(s2[i])).count("1") for i in range(len(s1))])
+    return sum([bin(s1[i]^s2[i]).count("1") for i in range(len(s1))])
 
 
 def xor_cyclic(a,b):
-    return "".join([chr(ord(a[i])^ord(b[i%len(b)])) for i in range(len(a))]).encode("hex")
+    raw_a = bytearray(a,"ascii")
+    raw_b = bytearray(b,"ascii")
+    xored = bytearray([raw_a[i]^raw_b[i%len(raw_b)] for i in range(len(raw_a))])
+    return xored
+
 
 def key_candidates(data):
     dists = []
@@ -91,7 +97,7 @@ def main():
     #Hamming distance works fine
 
     with open("6.txt") as f:
-        INPUT = "".join(f.readlines()).replace("\n","").decode("base64")
+        INPUT = base64.b64decode("".join(f.readlines()).replace("\n",""))
 
     #Input being decoded correctly
 
@@ -101,12 +107,12 @@ def main():
     
     possible_keys = []
     for KEYSIZE in keysizes:
-        blocks = [INPUT[i*KEYSIZE:(i+1)*KEYSIZE] for i in range(1+len(INPUT)/KEYSIZE)]
+        blocks = [INPUT[i*KEYSIZE:(i+1)*KEYSIZE] for i in range(1+int(len(INPUT)/KEYSIZE))]
         t_blocks = [""]*KEYSIZE
 
         for block in blocks:
             for i in range(len(block)): #not using KEYSIZE because I'm lazy
-                t_blocks[i] += block[i]
+                t_blocks[i] += chr(block[i])
         
         key = ""
         for s in t_blocks:
@@ -121,9 +127,9 @@ def main():
 
     for key in possible_keys:
         decrypted = ""
-        print "Decrypting using \"%s\"\n" %(key,)
+        print ("Decrypting using \"%s\"\n" %(key,))
         for i,c in enumerate(INPUT):
-             decrypted+=chr(ord(c)^ord(key[i%len(key)]))
-        print decrypted
+             decrypted+=chr(c^ord(key[i%len(key)]))
+        print (decrypted)
 
 main()

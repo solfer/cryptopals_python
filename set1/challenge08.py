@@ -23,7 +23,7 @@ def main():
     for cipher in INPUT:
         cipher = cipher.replace("\n","")
         if detect_ecb(cipher):
-            print cipher
-            return
+            print(cipher)
+            return #Only one of them is encrypted with ECB
 
 main()

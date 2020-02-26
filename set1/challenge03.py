@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 import string
 
@@ -21,7 +21,7 @@ def getChi2 (s):
     ignored = 0;
 
     for i in range(len(s)):
-        c = ord(s[i])
+        c = s[i]
         if c >= 65 and c <= 90:
             count[c - 65]+=1        # uppercase A-Z
         elif c >= 97 and c <= 122:
@@ -48,12 +48,13 @@ def getChi2 (s):
 
 
 def is_printable(s):
-    return all(c in string.printable for c in s)
-
+    return all(c in string.printable for c in str(s))
 
 def xor(a,k):
-    raw_a = a.decode("hex")
-    return "".join([chr(ord(raw_a[i])^ord(k)) for i in range(len(raw_a))])
+    raw_a = bytearray.fromhex(a)
+    
+    xored = bytearray([raw_a[i]^ord(k) for i in range(len(raw_a))])
+    return xored
 
 
 def brute(s):
@@ -73,6 +74,6 @@ b.sort(key = lambda x: x[2])
 #print b[0]
 result = b[0][0]
 key = b[0][1]
-print result
-print chr(key)
+print (result)
+print (chr(key))
 
