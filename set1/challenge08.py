@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 from Crypto.Cipher import AES
 
@@ -7,13 +7,10 @@ from Crypto.Cipher import AES
 
 # wget https://www.cryptopals.com/static/challenge-data/8.txt --no-check-certificate
 
+import sys 
+sys.path.append('..')
 
-def detect_ecb(cipher):
-    blocks = [cipher[i*32:(i+1)*32] for i in range(0,len(cipher)/32)]
-    x = len(blocks)
-    y = len(set(blocks))
-
-    return not x==y
+from cryptopals import detect_ecb
 
 def main():
 
@@ -21,9 +18,9 @@ def main():
         INPUT = f.readlines()
 
     for cipher in INPUT:
-        cipher = cipher.replace("\n","")
+        cipher = bytearray.fromhex(cipher.replace("\n",""))
         if detect_ecb(cipher):
-            print(cipher)
+            print(cipher.hex())
             return #Only one of them is encrypted with ECB
 
 main()

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3 #INCOMPLETE
 
 # https://www.cryptopals.com/sets/5/challenges/34
 #Implement a MITM key-fixing attack on Diffie-Hellman with parameter injection
@@ -54,7 +54,7 @@ def main():
 
     #A gets the iv, decrypts the data and verify the message:
     msg_temp = cbc_decrypt(aes_ecb_a,a_data2[:-16],a_data2[-16:])
-    print msg_a == msg_temp
+    print (msg_a == msg_temp)
 
 
 ################################################################################
@@ -82,10 +82,10 @@ def main():
     #User A calculates s, iv, key and encrypt a message
 
     s_a = pow(a_data, a, p)
-    print s_a
+    print (s_a)
     iv_a = random_aes_key(16)
     msg_a = "Super Secret Stuff123"
-    print hex(s_a)
+    print (hex(s_a))
     if s_a > 0xf:
         key_a = sha1(hex(s_a)[2:].replace('L','').decode('hex'))[:16]
     else:
@@ -123,7 +123,7 @@ def main():
 
     #A gets the iv, decrypts the data and verify the message:
     msg_temp = cbc_decrypt(aes_ecb_a,a_data2[:-16],a_data2[-16:])
-    print msg_a == msg_temp
+    print (msg_a == msg_temp)
 
 
 

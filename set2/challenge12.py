@@ -1,8 +1,10 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 from Crypto.Cipher import AES
 
 from random import randint
+
+import base64
 
 # https://www.cryptopals.com/sets/2/challenges/12
 # Byte-at-a-time ECB decryption (Simple)
@@ -20,19 +22,20 @@ def random_aes_key(x):
 
 def random_str(start,stop):
     size = randint(start,stop)
-    output = ""
+    output = bytes()
     for i in range(size):
-        output+=chr(randint(1,255))
+        output+=bytes(chr(randint(1,127)),"ascii") #this is me being lazy while converting code to Python3
     return output
     
 def encryption_oracle(plaintext):
     block_len = 16
     key = KEY
+    print(key)
     aes_ecb = AES.new(key, AES.MODE_ECB)
 
-    unknown = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK".decode("base64")
-    data = plaintext+unknown
-
+    unknown = base64.b64decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK")
+    data = bytearray(plaintext,"ascii")
+    data.extend(bytearray(unknown,"ascii"))
 
     data = pkcs7_add(data,block_len)
     test = aes_ecb.encrypt(data)
@@ -61,13 +64,13 @@ def main():
         b = len(encryption_oracle("A"*i))
         if a != b:
             blocksize = b-a
-            print "Block size: %d bytes" %(blocksize,)
+            print ("Block size: %d bytes" %(blocksize,))
             break
         
     #Detecting ECB:
     for i in range(blocksize,3*blocksize):
         if detect_ecb(encryption_oracle("A"*i)):
-            print "ECB detected"
+            print ("ECB detected")
             break
 
     #Retrieving unknown text
@@ -82,7 +85,7 @@ def main():
                 if temp == cipher:
                     secret += chr(c)
                     break
-    print secret
+    print (secret)
 
 KEY = random_aes_key(16)
 main()

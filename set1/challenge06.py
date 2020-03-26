@@ -1,69 +1,23 @@
 #! /usr/bin/python3
 
+import base64
+
+import sys 
+sys.path.append('..')
+from cryptopals import getChi2_space,xor_str_constant
+
 # https://www.cryptopals.com/sets/1/challenges/6
 # Break repeating-key XOR
 
 # wget https://www.cryptopals.com/static/challenge-data/6.txt --no-check-certificate
 
-## https://crypto.stackexchange.com/questions/30209/developing-algorithm-for-detecting-plain-text-via-frequency-analysis
-# http://www.macfreek.nl/memory/Letter_Distribution
-
-import base64
-
-#TODO: Replace this with a dictionary
-english_freq = [
-    0.0653216702, 0.0125888074, 0.0223367596, 0.0328292310, 0.1026665037, 0.0198306716, 0.0162490441,  # A-G
-    0.0497856396, 0.0566844326, 0.0009752181, 0.0056096272, 0.0331754796, 0.0202656783, 0.0571201113,  # H-N
-    0.0615957725, 0.0150432428, 0.0008367550, 0.0498790855, 0.0531700534, 0.0751699827, 0.0227579536,  # O-U
-    0.0079611644, 0.0170389377, 0.0014092016, 0.0142766662, 0.0005128469, 0.1828846265                  # V-Z+space
-]
-
-def getChi2 (s):
-    count = [0]*27
-    ignored = 0
-
-    for i in range(len(s)):
-        c = ord(s[i])
-        if c >= 65 and c <= 90:
-            count[c - 65]+=1        # uppercase A-Z
-        elif c >= 97 and c <= 122:
-            count[c-97]+=1          # lowercase a-z
-        elif c == 0x20:             # space
-            count[26]+=1
-        elif c >= 32 and c <= 126:
-            ignored+=1              # numbers and punct.
-        elif c == 9 or c == 10 or c == 13:
-            ignored+=1              # TAB, CR, LF
-        else:
-            return 10000000000     # not printable ASCII = impossible(?)
-    
-
-    chi2 = 0
-    size = len(s) - ignored
-    if ignored >= 0.25*len(s):
-        return 10000000000 #ignored too much
-    for i in range(27):
-        observed = count[i]
-        expected = size * english_freq[i]
-        if expected == 0:
-            return 10000000000
-        difference = observed - expected
-        chi2 += difference*difference / expected
-
-    return chi2
-
-
-def xor(a,k):
-    raw_a = a
-    return "".join([chr(ord(raw_a[i])^ord(k)) for i in range(len(raw_a))])
-
 
 def brute(s):
     candidates = []
     for k in range(0,256):
-        x = xor(s,chr(k))
+        x = xor_str_constant(s,k)
 
-        candidates.append((x,chr(k),getChi2(x)))
+        candidates.append((x,chr(k),getChi2_space(x)))
     return candidates
 
 
@@ -73,12 +27,6 @@ def hamming_distance(s1,s2):
         return None
     return sum([bin(s1[i]^s2[i]).count("1") for i in range(len(s1))])
 
-
-def xor_cyclic(a,b):
-    raw_a = bytearray(a,"ascii")
-    raw_b = bytearray(b,"ascii")
-    xored = bytearray([raw_a[i]^raw_b[i%len(raw_b)] for i in range(len(raw_a))])
-    return xored
 
 
 def key_candidates(data):
@@ -92,14 +40,9 @@ def key_candidates(data):
     return dists
 
 def main():
-    #print hamming_distance("this is a test","wokka wokka!!!") # should be 37
-
-    #Hamming distance works fine
 
     with open("6.txt") as f:
         INPUT = base64.b64decode("".join(f.readlines()).replace("\n",""))
-
-    #Input being decoded correctly
 
     dists = key_candidates(INPUT)
 

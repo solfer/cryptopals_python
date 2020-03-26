@@ -1,28 +1,22 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 # https://www.cryptopals.com/sets/2/challenges/9
 # Implement PKCS#7 padding
 
+import sys 
+sys.path.append('..')
 
-def pkcs7_add(data, block_len):
-    pad = block_len - len(data)%block_len
-    if pad < 0:
-        return None
-    elif pad == 0:
-        return data + chr(block_len)*block_len
-    return data + chr(pad)*pad
-
-def pkcs7_remove(data):
-    pad = ord(data[-1])
-    return data[:-pad]
+from cryptopals import pkcs7_add
 
 def main():
 
     INPUT = "YELLOW SUBMARINE"
     RESULT = "YELLOW SUBMARINE\x04\x04\x04\x04"
 
-    result = pkcs7_add(INPUT,20)
+    x = bytearray(INPUT,"ascii")
+    r = bytearray(RESULT,"ascii")
+    result = pkcs7_add(x,20)
 
-    print "Success" if RESULT == result else "Fail"
+    print("Success") if r == result else print("Fail")
 
 main()
