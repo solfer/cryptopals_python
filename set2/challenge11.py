@@ -38,7 +38,6 @@ def encryption_oracle(plaintext):
 def main():
     with open("11.html") as f:
         plaintext = f.read()
-    #plaintext = "Ehrsam, Meyer, Smith and Tuchman invented the Cipher Block Chaining (CBC) mode of operation in 1976.[11] In CBC mode, each block of plaintext is XORed with the previous ciphertext block before being encrypted. This way, each ciphertext block depends on all plaintext blocks processed up to that point. To make each message unique, an initialization vector must be used in the first block."*4
 
     for i in range(32):
         encryption_oracle(plaintext)

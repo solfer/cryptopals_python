@@ -130,6 +130,8 @@ def detect_ecb(cipher,block_len=16):
 
     return not x==y
 
+
+#Receives a bytearray
 def pkcs7_add(data, block_len):
     pad = block_len - len(data)%block_len
     if pad < 0:
@@ -141,7 +143,7 @@ def pkcs7_add(data, block_len):
     return data
 
 def pkcs7_remove(data):
-    pad = ord(data[-1])
+    pad = data[-1]
     return data[:-pad]
 
 def cbc_encrypt(aes_ecb,plaintext,IV,BLOCK_LEN=16):
