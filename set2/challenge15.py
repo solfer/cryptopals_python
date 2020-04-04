@@ -1,31 +1,13 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 # https://www.cryptopals.com/sets/2/challenges/15
 # PKCS#7 padding validation
 
+import sys 
+sys.path.append('..')
 
-
-
-def pkcs7_add(data, block_len=16):
-    pad = block_len - len(data)%block_len
-    if pad < 0:
-        return None
-    elif pad == 0:
-        return data + chr(block_len)*block_len
-    return data + chr(pad)*pad
-
-def pkcs7_remove(data):
-    pad = ord(data[-1])
-    return data[:-pad]
-
-def pkcs7_validation(data, block_len=16):
-    pad_size = ord(data[-1])
-    padding = data[-pad_size:]
-    if len(set(padding)) != 1 or len(data)%block_len != 0:
-        raise ValueError("Invalid padding")
-        raise Exception("Bad padding")
-    return data[:-pad_size]
-        
+from cryptopals import pkcs7_validation
+   
 
 def main():
 
@@ -37,9 +19,9 @@ def main():
 
     for i in inputs:
         try:
-            print pkcs7_validation(i)
+            print (pkcs7_validation(bytearray(i,'ascii')))
         except Exception as error:
-            print repr(error)
+            print (repr(error))
             
 
 main()

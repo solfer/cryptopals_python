@@ -6,7 +6,7 @@ import base64
 import sys 
 sys.path.append('..')
 
-from cryptopals import xor,cbc_decrypt
+from cryptopals import cbc_decrypt
 
 # https://www.cryptopals.com/sets/2/challenges/10
 # Implement CBC mode
@@ -29,7 +29,7 @@ def main():
 
     ciphertext = base64.b64decode(INPUT)
 
-    plaintext = cbc_decrypt(aes_ecb,ciphertext,IV)   
+    plaintext = cbc_decrypt(aes_ecb,ciphertext,bytes(IV,"ascii"))   
     print(plaintext)
 
 main()

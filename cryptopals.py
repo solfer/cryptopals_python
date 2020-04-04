@@ -146,28 +146,32 @@ def pkcs7_remove(data):
     pad = data[-1]
     return data[:-pad]
 
-def cbc_encrypt(aes_ecb,plaintext,IV,BLOCK_LEN=16):
-    blocks = [bytes(plaintext[i:i+BLOCK_LEN]) for i in range(0,len(plaintext),BLOCK_LEN)]
-    
+# plaintext is a bytearray
+def cbc_encrypt(aes_ecb,plaintext,IV,block_len=16):
+    padded_plaintext = pkcs7_add(plaintext,block_len)
+    blocks = [bytes(padded_plaintext[i:i+block_len]) for i in range(0,len(padded_plaintext),block_len)]
     prev = IV
     ciphertext = bytearray()
     for block in blocks:
-        if len(block) != BLOCK_LEN:
-            block = pkcs7_add(bytearray(block),BLOCK_LEN)
         enc = aes_ecb.encrypt(bytes(xor(block,prev)))
-        ciphertext.extend(xor(enc,prev))
+        ciphertext.extend(enc)
         prev = enc
     return ciphertext
 
-def cbc_decrypt(aes_ecb,ciphertext,IV,block_len=16):
+# ciphertext is a bytearray and iv's type is bytes 
+def cbc_decrypt(aes_ecb,ciphertext,IV,block_len=16,validation=False):
+
     blocks = [bytes(ciphertext[i:i+block_len]) for i in range(0,len(ciphertext),block_len)]
-    
-    prev = bytes(IV,"ascii")
+    prev = IV
     plaintext = bytearray()
     for block in blocks:
+
         dec = aes_ecb.decrypt(block)
         plaintext.extend(xor(dec,prev))
         prev = block
+
+    if validation:
+        plaintext = pkcs7_validation(plaintext)
     return plaintext
 
 def random_aes_key(x):
@@ -177,3 +181,13 @@ def random_str(start,stop):
     from random import randint
     size = randint(start,stop)
     return bytes([randint(0,255) for i in range(size)])
+
+def pkcs7_validation(data, block_len=16):
+    pad_size = data[-1]
+    padding = data[-pad_size:]
+    if len(set(padding)) != 1 or len(data)%block_len != 0:
+        raise ValueError("Invalid padding")
+        raise Exception("Bad padding")
+    return data[:-pad_size]
+
+

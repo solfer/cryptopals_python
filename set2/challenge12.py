@@ -12,7 +12,7 @@ import base64
 import sys 
 sys.path.append('..')
 
-from cryptopals import detect_ecb,random_aes_key,random_str,cbc_encrypt,pkcs7_add
+from cryptopals import detect_ecb,random_aes_key,random_str,kcs7_add
 
 def encryption_oracle(plaintext):
     block_len = 16
@@ -23,10 +23,9 @@ def encryption_oracle(plaintext):
 
 
     #"data = plaintext + unknown"
-    try:
-        data = bytearray(plaintext.encode())
-    except:
-        data = bytes(plaintext)
+
+    data = bytearray(plaintext.encode())
+    
     data.extend(bytearray(unknown))
 
 
