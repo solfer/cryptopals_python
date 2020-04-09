@@ -1,7 +1,10 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
-# https://www.cryptopals.com/sets/2/challenges/21
+# https://www.cryptopals.com/sets/3/challenges/21
 # Implement the MT19937 Mersenne Twister RNG
+
+# Implementation is correct, according to https://asecuritysite.com/encryption/twister?Length=10 and https://create.stephan-brumme.com/mersenne-twister/
+
 
 (w, n, m, r) = (32, 624, 397, 31)
 a = 0x9908B0DF
@@ -26,7 +29,7 @@ def seed_mt(seed):
     index = n
     MT[0] = seed
     for i in range(1,n):
-        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i) & d
+        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i)# & d
 
 # Extract a tempered value based on MT[index] calling twist() every n numbers
 def extract_number():
@@ -54,17 +57,18 @@ def twist():
     global MT
     for i in range(0,n):
         x = (MT[i] & upper_mask) + (MT[(i+1) % n] & lower_mask)
-        xA = (x >> 1) & d
+        xA = (x >> 1) #xA = (x >> 1) & d
         if x % 2 != 0: #lowest bit of x is 1
             xA = xA ^ a
 
         MT[i] = MT[(i+m) % n] ^ xA
     index = 0
 
-
 def main():
+    import random
+    random.seed(5489)
     #seed_mt(5489)
     for i in range(3):
-        print extract_number()
-        #print random.randint(0,0xFFFFFFFF)
+        print (hex(extract_number()))
+        #print (random.randint(0,0xFFFFFFFF))
 main()

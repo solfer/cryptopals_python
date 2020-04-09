@@ -190,4 +190,19 @@ def pkcs7_validation(data, block_len=16):
         raise Exception("Bad padding")
     return data[:-pad_size]
 
+def ctr(data,key,nonce,blocksize=16):
+    from Crypto.Cipher import AES
+    import struct
+    aes = AES.new(key, AES.MODE_ECB)
+    nonce = struct.pack("<Q",nonce) #unsigned LE long long int (8 bytes)
+    count = 0
+    ciphertext = bytearray(data)
+
+    for i in range((len(ciphertext))):
+        if i % blocksize == 0:
+            keystream = aes.encrypt(nonce+struct.pack("<q",count)) #signed LE long long int (8 bytes)
+            count += 1
+        ciphertext[i] ^= keystream[i % blocksize]
+
+    return ciphertext
 

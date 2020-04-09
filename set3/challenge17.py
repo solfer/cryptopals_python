@@ -1,12 +1,18 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 from Crypto.Cipher import AES
 
 from random import randint,seed
+import base64
 
 #seed(a=3)
-# https://www.cryptopals.com/sets/2/challenges/17
+# https://www.cryptopals.com/sets/3/challenges/17
 # The CBC padding oracle
+
+import sys 
+sys.path.append('..')
+
+from cryptopals import cbc_decrypt,cbc_encrypt,random_aes_key,pkcs7_validation
 
 INPUT = [
         "MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=",
@@ -20,95 +26,32 @@ INPUT = [
         "MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=",
         "MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93"]
 
-def random_aes_key(blocksize=16):
-    return random_str(blocksize,blocksize)
-
-def random_str(start,stop):
-    size = randint(start,stop)
-    output = ""
-    for i in range(size):
-        output+=chr(randint(1,255))
-    return output
-    
+   
 def f1():
     block_len = 16
     global key
 
     data = INPUT[randint(0,len(INPUT)-1)] #padding is added by the encryption function
 
-    key = random_aes_key()
-
-    iv = random_aes_key()
+    key = random_aes_key(16)
+    iv = random_aes_key(16)
 
     aes_ecb = AES.new(key, AES.MODE_ECB)
 
-    return (cbc_encrypt(aes_ecb,data,iv),iv)
+    return (cbc_encrypt(aes_ecb,bytearray(data,"ascii"),iv),iv)
     
 def f2(ciphertext,iv):
     block_len = 16
     global key
     aes_ecb = AES.new(key, AES.MODE_ECB)
     try:
-        plaintext = cbc_decrypt(aes_ecb,ciphertext,iv)
+        plaintext = cbc_decrypt(aes_ecb,ciphertext,iv,validation=True)
+        #plaintext = cbc_decrypt(aes_ecb,ciphertext,iv)
         #pkcs7_validation(plaintext)
         return True
     except ValueError:
         return False
     
-
-
-def pkcs7_add(data, block_len=16):
-    pad = block_len - len(data)%block_len
-    if pad < 0:
-        return None
-    elif pad == 0:
-        return data + chr(block_len)*block_len
-    return data + chr(pad)*pad
-
-def pkcs7_validation(data, block_len=16):
-    pad_size = ord(data[-1])
-    padding = data[-pad_size:]
-    if len(set(padding)) != 1 or len(data)%block_len != 0:
-        raise ValueError("Invalid padding")
-        raise Exception("Bad padding")
-    return data[:-pad_size]
-
-
-def xor(a,b):
-    raw_a = a
-    raw_b = b
-    return "".join([chr(ord(raw_a[i])^ord(raw_b[i])) for i in range(len(raw_a))])
-
-def cbc_decrypt(aes_ecb,ciphertext,iv,BLOCK_LEN=16):
-    blocks = [ciphertext[i:i+BLOCK_LEN] for i in range(0,len(ciphertext),BLOCK_LEN)]
-    
-    prev = iv
-    plaintext = ""
-    for block in blocks:
-        dec = xor(aes_ecb.decrypt(block),prev)
-        if block == blocks[-1]:
-            plaintext += pkcs7_validation(dec)
-        else:
-            plaintext += dec
-            prev = block
-    return plaintext
-
-def cbc_encrypt(aes_ecb,plaintext,iv,BLOCK_LEN=16):
-    padded_plaintext = pkcs7_add(plaintext,BLOCK_LEN)
-    blocks = [padded_plaintext[i:i+BLOCK_LEN] for i in range(0,len(padded_plaintext),BLOCK_LEN)]
-    
-    prev = iv
-    ciphertext = ""
-    for block in blocks:
-        enc = aes_ecb.encrypt(xor(block,prev))
-        ciphertext += enc
-        prev = enc
-    return ciphertext
-
-def modify_string(s,pos,value):
-    x = s[:pos]+value+s[pos+1:]
-    return x
-
 def blockfy(data, blocklen=16):
     return [data[i:i+blocklen] for i in range(0,len(data),blocklen)]
 
@@ -130,7 +73,8 @@ def main():
                 for k in range(1,j):
                     prev_block[blocksize-k] = prev_block[blocksize-k] ^ ord(decrypted[-k-(l-b)*blocksize]) ^ j #0x04
                 prev_block[blocksize-j] = prev_block[blocksize-j] ^ i
-                s = str(prev_block)+cur_block
+                s = prev_block
+                s.extend(cur_block)
                 if f2(s,iv):
                     flag = True
                     decrypted = chr(i^j) + decrypted
@@ -138,6 +82,8 @@ def main():
             if not flag:
                 i = 0
                 decrypted = chr(i^j) + decrypted
-            
-    print pkcs7_validation(decrypted).decode('base64')
+    
+    #print(decrypted)
+    print (base64.b64decode(pkcs7_validation(bytearray(decrypted,"ascii"))))
+
 main()

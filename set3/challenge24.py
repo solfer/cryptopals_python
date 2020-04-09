@@ -1,10 +1,17 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
-# https://www.cryptopals.com/sets/2/challenges/24
+# https://www.cryptopals.com/sets/3/challenges/24
 # Create the MT19937 stream cipher and break it
 
 import time
 import struct
+from random import randint
+
+
+import sys 
+sys.path.append('..')
+
+from cryptopals import xor,random_str
 
 (w, n, m, r) = (32, 624, 397, 31)
 a = 0x9908B0DF
@@ -29,8 +36,7 @@ def seed_mt(seed):
     index = n
     MT[0] = seed
     for i in range(1,n):
-        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i) & d
- 
+        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i)# & d
 
 # Extract a tempered value based on MT[index] calling twist() every n numbers
 def extract_number():
@@ -47,6 +53,7 @@ def extract_number():
     y = y ^ ((y << s) & b)
     y = y ^ ((y << t) & c)
     y = y ^ (y >> l)
+
     index += 1
     return ((1 << w) -1) & y #return lowest w bits of y
 
@@ -57,7 +64,7 @@ def twist():
     global MT
     for i in range(0,n):
         x = (MT[i] & upper_mask) + (MT[(i+1) % n] & lower_mask)
-        xA = (x >> 1) & d
+        xA = (x >> 1) #xA = (x >> 1) & d
         if x % 2 != 0: #lowest bit of x is 1
             xA = xA ^ a
 
@@ -72,26 +79,23 @@ def mt19937_stream_cipher(data,key,blocksize=4):
     for i in range((len(ciphertext))):
         if i % blocksize == 0:
             keystream = int_to_bytes(extract_number())
-        ciphertext[i] ^= ord(keystream[i % blocksize])
+        ciphertext[i] ^= keystream[i % blocksize]
 
-    return str(ciphertext)
+    return ciphertext
 
-def recover_key(plaintext,ciphertext):
-    temp = xor(plaintext,ciphertext)
+def recover_key(known,ciphertext):
+    fake = bytearray(len(ciphertext)-len(known))
+    fake.extend(known)
+    temp = xor(fake,ciphertext)
     x = [temp[i:i+4] for i in range(0,len(temp),4)]
-    a = struct.Struct('<I').unpack(x[0])[0]
+    a = struct.Struct('<I').unpack(x[-2])[0] #getting the penultimate block
     
     for K in range(0x10000):
         seed_mt(K)
-        if extract_number() == a:
-            retrieved_seed = K
-            break
-    return retrieved_seed
-
-def xor(a,b):
-    raw_a = a
-    raw_b = b
-    return "".join([chr(ord(raw_a[i])^ord(raw_b[i])) for i in range(len(raw_a))])
+        for i in range(0,len(ciphertext)-4,4):
+            w = extract_number()
+        if w == a:
+            return K
 
 def gen_token():
     s_time = int(time.time()) & 0xFFFF
@@ -99,21 +103,33 @@ def gen_token():
     return extract_number()
 
 def verify_token(token):
-    for K in range(0x10000):
+    interval = 15*60 # 15 min
+    s_time = int(time.time()) - interval # Current time - interval
+    for i in range (interval+1):
+        K = (s_time + i) & 0xFFFF
         seed_mt(K)
         if extract_number() == token:
             return True
     return False
 
 def main():
-    data = "sancjnLKCSNLSA"+"A"*18
-    key = 0xFF#FF
+    known = bytearray("A"*14,"ascii")
+    secret = random_str(4,50)
+    data = bytearray(secret)
+    data.extend(known)
+    key = randint(0x0000,0xFFFF)
+
+    print ("Key chosen:",hex(key))
     ciphertext = mt19937_stream_cipher(data,key)
     decrypted = mt19937_stream_cipher(ciphertext,key)
 
-    print hex(recover_key(data,ciphertext))
+    if decrypted == data:
+        print ("Decryption works")
+
+    print ("Key retrieved:",hex(recover_key(known,ciphertext)))
 
     token = gen_token()
-    print verify_token(token)
+    if verify_token(token):
+        print ("Token is valid")
 
 main()

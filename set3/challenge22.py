@@ -1,6 +1,6 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
-# https://www.cryptopals.com/sets/2/challenges/22
+# https://www.cryptopals.com/sets/3/challenges/22
 # Crack an MT19937 seed
 
 import time
@@ -28,7 +28,7 @@ def seed_mt(seed):
     index = n
     MT[0] = seed
     for i in range(1,n):
-        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i) & d
+        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i)# & d
 
 # Extract a tempered value based on MT[index] calling twist() every n numbers
 def extract_number():
@@ -56,13 +56,12 @@ def twist():
     global MT
     for i in range(0,n):
         x = (MT[i] & upper_mask) + (MT[(i+1) % n] & lower_mask)
-        xA = (x >> 1) & d
+        xA = (x >> 1) #xA = (x >> 1) & d
         if x % 2 != 0: #lowest bit of x is 1
             xA = xA ^ a
 
         MT[i] = MT[(i+m) % n] ^ xA
     index = 0
-
 
 def main():
     s_time = int(time.time())
@@ -73,8 +72,8 @@ def main():
     seed_mt(seed)
     output = extract_number()
 
-    print "RNG output:", output
-    print "Seed used:", seed
+    print ("RNG output:   ", output)
+    print ("Seed used:    ", seed)
 
     seed_mt(17)
     current_time = int(time.time()) + (50 + extract_number()%1000) #Faking time again
@@ -83,7 +82,7 @@ def main():
     for s in range(current_time - t,current_time+1):
          seed_mt(s)
          if output == extract_number():
-            print "Seed detected:", s
+            print ("Seed detected:", s)
             break
     
 

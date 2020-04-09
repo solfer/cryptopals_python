@@ -1,6 +1,6 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
-# https://www.cryptopals.com/sets/2/challenges/23
+# https://www.cryptopals.com/sets/3/challenges/23
 # Clone an MT19937 RNG from its output
 
 import time
@@ -28,8 +28,7 @@ def seed_mt(seed):
     index = n
     MT[0] = seed
     for i in range(1,n):
-        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i) & d
- 
+        MT[i] = ((1 << w) -1) & (f * (MT[i-1] ^ (MT[i-1] >> (w-2)))+i)# & d
 
 # Extract a tempered value based on MT[index] calling twist() every n numbers
 def extract_number():
@@ -46,8 +45,10 @@ def extract_number():
     y = y ^ ((y << s) & b)
     y = y ^ ((y << t) & c)
     y = y ^ (y >> l)
+
     index += 1
     return ((1 << w) -1) & y #return lowest w bits of y
+
 
 def fake_extract_number():
     global fake_index
@@ -102,7 +103,7 @@ def twist():
     global MT
     for i in range(0,n):
         x = (MT[i] & upper_mask) + (MT[(i+1) % n] & lower_mask)
-        xA = (x >> 1) & d
+        xA = (x >> 1) #xA = (x >> 1) & d
         if x % 2 != 0: #lowest bit of x is 1
             xA = xA ^ a
 
@@ -116,7 +117,7 @@ def fake_twist():
     global fake_MT
     for i in range(0,n):
         x = (fake_MT[i] & upper_mask) + (fake_MT[(i+1) % n] & lower_mask)
-        xA = (x >> 1) & d
+        xA = (x >> 1)
         if x % 2 != 0: #lowest bit of x is 1
             xA = xA ^ a
 
@@ -125,7 +126,8 @@ def fake_twist():
 
 
 def main():
-    seed_mt(0)
+    seed = int(time.time())
+    seed_mt(seed)
     retrieved = []
     for i in range(n):
         retrieved.append(extract_number())
@@ -139,9 +141,9 @@ def main():
     fake_MT = reversed_states
     fake_index = n
 
-    print MT == fake_MT
+    print (MT == fake_MT)
 
-    print extract_number()
-    print fake_extract_number()
+    print (extract_number())
+    print (fake_extract_number())
 
 main()
