@@ -36,7 +36,7 @@ def edit(data,key,nonce,offset,newtext,blocksize=16):
             keystream = aes.encrypt(nonce+struct.pack("<q",count)) #signed LE long long int (8 bytes)
             count += 1
         if i >= offset and i < offset+len(newtext):
-            ciphertext[i] = ord(newtext[i-offset]) ^ ord(keystream[i % blocksize])
+            ciphertext[i] = newtext[i-offset] ^ keystream[i % blocksize]
 
     return ciphertext
 
@@ -51,9 +51,9 @@ def main():
     nonce = 0
     ciphertext = ctr(INPUT,key,nonce)
     #print ctr(ciphertext,key,nonce)[:255]
-
-    mask = edit_api(ciphertext,0,"A"*len(ciphertext))
-    keystream = xor("A"*len(ciphertext),mask)
+    junk = bytearray("A"*len(ciphertext),"ascii")
+    mask = edit_api(ciphertext,0,junk)
+    keystream = xor(junk,mask)
     plaintext = xor(ciphertext,keystream)
-    print plaintext
+    print (plaintext)
 main()

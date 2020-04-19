@@ -19,7 +19,6 @@ def xor_str_constant(a,k):
     raw_b = bytearray([k]*len(raw_a))
     return xor(raw_a,raw_b)
 
-
 def xor_str_cyclic(a,b):
     if len(a) < len (b):
         a,b = b,a
@@ -133,14 +132,15 @@ def detect_ecb(cipher,block_len=16):
 
 #Receives a bytearray
 def pkcs7_add(data, block_len):
-    pad = block_len - len(data)%block_len
+    out = bytearray(data)
+    pad = block_len - len(out)%block_len
     if pad < 0:
         return None
     elif pad == 0:
-        data.extend(bytes([block_len]*block_len))
-        return data
-    data.extend(bytes([pad]*pad))
-    return data
+        out.extend(bytes([block_len]*block_len))
+        return out
+    out.extend(bytes([pad]*pad))
+    return out
 
 def pkcs7_remove(data):
     pad = data[-1]
@@ -148,7 +148,7 @@ def pkcs7_remove(data):
 
 # plaintext is a bytearray
 def cbc_encrypt(aes_ecb,plaintext,IV,block_len=16):
-    padded_plaintext = pkcs7_add(plaintext,block_len)
+    padded_plaintext = pkcs7_add(bytes(plaintext),block_len)
     blocks = [bytes(padded_plaintext[i:i+block_len]) for i in range(0,len(padded_plaintext),block_len)]
     prev = IV
     ciphertext = bytearray()
@@ -174,7 +174,7 @@ def cbc_decrypt(aes_ecb,ciphertext,IV,block_len=16,validation=False):
         plaintext = pkcs7_validation(plaintext)
     return plaintext
 
-def random_aes_key(x):
+def random_aes_key(x=16):
     return random_str(x,x)
 
 def random_str(start,stop):
@@ -205,4 +205,231 @@ def ctr(data,key,nonce,blocksize=16):
         ciphertext[i] ^= keystream[i % blocksize]
 
     return ciphertext
+
+# SHA-1 implementation taken from https://github.com/ajalt/python-sha1/blob/master/sha1.py
+
+################################################################################
+### SHA-1 ######################################################################
+################################################################################
+
+import struct
+import io
+
+def _left_rotate(n, b):
+    """Left rotate a 32-bit integer n by b bits."""
+    return ((n << b) | (n >> (32 - b))) & 0xffffffff
+
+
+def _process_chunk(chunk, h0, h1, h2, h3, h4):
+    """Process a chunk of data and return the new digest variables."""
+    assert len(chunk) == 64
+    #print "Chunk:",[chunk]
+    #print "Process chunk [before]:",(hex(h0),hex(h1),hex(h2),hex(h3),hex(h4))
+    w = [0] * 80
+
+    # Break chunk into sixteen 4-byte big-endian words w[i]
+    for i in range(16):
+        w[i] = struct.unpack(b'>I', chunk[i * 4:i * 4 + 4])[0]
+
+    # Extend the sixteen 4-byte words into eighty 4-byte words
+    for i in range(16, 80):
+        w[i] = _left_rotate(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1)
+
+    # Initialize hash value for this chunk
+    a = h0
+    b = h1
+    c = h2
+    d = h3
+    e = h4
+
+    for i in range(80):
+        if 0 <= i <= 19:
+            # Use alternative 1 for f from FIPS PB 180-1 to avoid bitwise not
+            f = d ^ (b & (c ^ d))
+            k = 0x5A827999
+        elif 20 <= i <= 39:
+            f = b ^ c ^ d
+            k = 0x6ED9EBA1
+        elif 40 <= i <= 59:
+            f = (b & c) | (b & d) | (c & d)
+            k = 0x8F1BBCDC
+        elif 60 <= i <= 79:
+            f = b ^ c ^ d
+            k = 0xCA62C1D6
+
+        a, b, c, d, e = ((_left_rotate(a, 5) + f + e + k + w[i]) & 0xffffffff,
+                         a, _left_rotate(b, 30), c, d)
+
+    # Add this chunk's hash to result so far
+    h0 = (h0 + a) & 0xffffffff
+    h1 = (h1 + b) & 0xffffffff
+    h2 = (h2 + c) & 0xffffffff
+    h3 = (h3 + d) & 0xffffffff
+    h4 = (h4 + e) & 0xffffffff
+    #print "Process chunk [after]:",(hex(h0),hex(h1),hex(h2),hex(h3),hex(h4))
+    return h0, h1, h2, h3, h4
+
+
+class Sha1Hash(object):
+    """A class that mimics that hashlib api and implements the SHA-1 algorithm."""
+
+    name = 'python-sha1'
+    digest_size = 20
+    block_size = 64
+
+    def __init__(self,h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0,length_offset=0):
+        # Initial digest variables
+        self._h = (
+            h0,
+            h1,
+            h2,
+            h3,
+            h4,
+        )
+
+        # bytes object with 0 <= len < 64 used to store the end of the message
+        # if the message length is not congruent to 64
+        self._unprocessed = b''
+        # Length in bytes of all data that has been processed so far
+        self._message_byte_length = length_offset
+
+    def update(self, arg):
+        """Update the current digest.
+        This may be called repeatedly, even after calling digest or hexdigest.
+        Arguments:
+            arg: bytes, bytearray, or BytesIO object to read from.
+        """
+        if isinstance(arg, (bytes, bytearray)):
+            arg = io.BytesIO(arg)
+        # Try to build a chunk out of the unprocessed data, if any
+
+        chunk = self._unprocessed + arg.read(64 - len(self._unprocessed))
+
+        # Read the rest of the data, 64 bytes at a time
+        while len(chunk) == 64:
+            self._h = _process_chunk(chunk, *self._h)
+            self._message_byte_length += 64
+            chunk = arg.read(64)
+
+
+        self._unprocessed = chunk
+        #print self._unprocessed
+        return self
+
+    def digest(self):
+        """Produce the final hash value (big-endian) as a bytes object"""
+        return b''.join(struct.pack(b'>I', h) for h in self._produce_digest())
+
+    def hexdigest(self):
+        """Produce the final hash value (big-endian) as a hex string"""
+        return '%08x%08x%08x%08x%08x' % self._produce_digest()
+
+    def _produce_digest(self):
+        """Return finalized digest variables for the data processed so far."""
+        # Pre-processing:
+        message = self._unprocessed
+        message_byte_length = self._message_byte_length + len(message)
+
+        # append the bit '1' to the message
+        message += b'\x80'
+
+        # append 0 <= k < 512 bits '0', so that the resulting message length (in bytes)
+        # is congruent to 56 (mod 64)
+        message += b'\x00' * ((56 - (message_byte_length + 1) % 64) % 64)
+        # append length of message (before pre-processing), in bits, as 64-bit big-endian integer
+        message_bit_length = message_byte_length * 8
+        #print message_bit_length
+        message += struct.pack(b'>Q', message_bit_length)
+        # Process the final chunk
+        # At this point, the length of the message is either 64 or 128 bytes.
+        h = _process_chunk(message[:64], *self._h)
+        if len(message) == 64:
+            #print (hex(h[0]),hex(h[1]),hex(h[2]),hex(h[3]),hex(h[4]))
+            return h
+        #print (hex(h[0]),hex(h[1]),hex(h[2]),hex(h[3]),hex(h[4]))
+        return _process_chunk(message[64:], *h)
+
+
+def sha1(data,h0=None,h1=None,h2=None,h3=None,h4=None,length_offset=0):
+    """SHA-1 Hashing Function
+    A custom SHA-1 hashing function implemented entirely in Python.
+    Arguments:
+        data: A bytes or BytesIO object containing the input message to hash.
+    Returns:
+        A hex SHA-1 digest of the input message.
+    """
+    if h0 and h1 and h2 and h3 and h4:
+        return Sha1Hash(h0,h1,h2,h3,h4,length_offset).update(data).hexdigest()
+    return Sha1Hash().update(data).hexdigest()
+
+################################################################################
+################################################################################
+
+
+def int_to_bytes(x,order="little"):
+    from math import log2
+    if x == 0:
+        return b'\x00'
+    return x.to_bytes(int(log2(x)/8)+1, byteorder=order, signed=False)
+
+
+def HMAC_SHA256(data,k,blocksize=64):
+    from hashlib import sha256
+    if len(k) > blocksize:
+        k = int_to_bytes(int(sha256(k).hexdigest(),16))
+
+    if len(k) < blocksize:
+        k += bytes(blocksize-len(k))
+    
+    o_key_pad = xor(k,b"\x5c"*blocksize)
+    i_key_pad = xor(k,b"\x36"*blocksize)
+
+    temp = int_to_bytes(int(sha256(i_key_pad + data).hexdigest(),16))
+    h = sha256(o_key_pad+temp).hexdigest()
+    return h
+
+# https://en.wikibooks.org/wiki/Algorithm_Implementation/Mathematics/Extended_Euclidean_algorithm
+# I haven't tested this properly
+def xgcd(a, b):
+    """return (g, x, y) such that a*x + b*y = g = gcd(a, b)"""
+    x0, x1, y0, y1 = 0, 1, 1, 0
+    while a != 0:
+        (q, a), b = divmod(b, a), a
+        y0, y1 = y1, y0 - q * y1
+        x0, x1 = x1, x0 - q * x1
+    return b, x0, y0
+
+def modinv(a, b):
+    """return x such that (x * a) % b == 1"""
+    g, x, _ = xgcd(a, b)
+    if g != 1:
+        raise Exception(f'gcd({a}, {b}) != 1')
+    return x % b
+
+def rsa_encrypt(m,e,n):
+    return pow(m,e,n)
+
+def rsa_decrypt(c,d,n):
+    return rsa_encrypt(c,d,n) #lol
+
+def rsa_key_gen(p,q,e):
+    n = p*q
+    et = (p-1)*(q-1)
+    d = modinv(e,et)
+    pub_key = (e,n)
+    priv_key = (d,n)
+    return (pub_key,priv_key)
+
+def test_primes(p,q,e):
+    et = (p-1)*(q-1)
+    try:
+        modinv(e,et)
+        return True
+    except:
+        return False
+
+def generate_rsa_prime():
+    import os
+    return int(os.popen("openssl prime -generate -bits 2048").read())
+
 

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 # https://www.cryptopals.com/sets/4/challenges/29
 # Break a SHA-1 keyed MAC using length extension
@@ -13,11 +13,11 @@
 import struct
 import io
 
-try:
-    range = xrange
-except NameError:
-    pass
 
+import sys 
+sys.path.append('..')
+
+from cryptopals import random_str
 
 def _left_rotate(n, b):
     """Left rotate a 32-bit integer n by b bits."""
@@ -177,7 +177,9 @@ def fake_message(original_message,new_message,sha1_hash,min_key=0,max_key=40):
     h = [int(sha1_hash[0+i:8+i],16) for i in range(0,40,8)]
     #print "TEST:",map(hex,h)
     for i in range(min_key,max_key+1):
-        pad = padding("A"*i+original_message)
+        temp = bytearray("A"*i,"ascii")
+        temp.extend(original_message)
+        pad = padding(temp)
         possible_hashes.append((original_message+pad+new_message,sha1(new_message,h[0],h[1],h[2],h[3],h[4],i+len(original_message)+len(pad))))
     return possible_hashes
 
@@ -189,30 +191,30 @@ def padding(data):
     message_byte_length = len(data)
 
     # append the bit '1' to the message
-    pad = b'\x80'
+    pad = bytearray([0x80])
 
     # append 0 <= k < 512 bits '0', so that the resulting message length (in bytes)
     # is congruent to 56 (mod 64)
-    pad += b'\x00' * ((56 - (message_byte_length + 1) % 64) % 64)
+    pad.extend(bytearray(((56 - (message_byte_length + 1) % 64) % 64)))
     message_bit_length = message_byte_length * 8
         #print message_bit_length
-    pad += struct.pack(b'>Q', message_bit_length)
+    pad.extend(struct.pack(b'>Q', message_bit_length))
     return pad
 
 def main():
     global key
-    key = "bob"
-    message = "comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon"
+    key = random_str(10,40)
+    message = bytearray("comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon","ascii")
     #message = "A"
     mac = MAC_SHA1(message,key)
 
-    new_message = ";admin=true"
+    new_message = bytearray(";admin=true","ascii")
     possible_hashes = fake_message(message,new_message,mac)
 
     for (m,h) in possible_hashes:
         if verify_mac_sha1(m,h):
-            print h,"\n"
-            print [m]
+            print (h)
+            print (m)
             exit()
 
 main()

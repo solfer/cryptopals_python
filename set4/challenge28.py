@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 # https://www.cryptopals.com/sets/4/challenges/28
 # Implement a SHA-1 keyed MAC
@@ -164,14 +164,24 @@ def sha1(data):
 ################################################################################
 
 def MAC_SHA1(message,key):
-    return sha1(key+message)
+    data = key
+    data.extend(message)
+    return sha1(data)
 
 def main():
     key = "bob"
     message = "I love bacon"
-    mac = MAC_SHA1(message,key)
-    print mac
-    print sha1("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    mac = MAC_SHA1(bytearray(message,"ascii"),bytearray(key,"ascii"))
+    print (mac)
+    print (sha1(bytearray("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","ascii")))
 
 main()
+
+
+'''
+root@kali:~# echo -ne "bobI love bacon" | sha1sum 
+c7645055fb7945ab94e4678c3b13e3a6c91c1090  -
+root@kali:~# echo -ne "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" | sha1sum 
+ed819b4336d64c93a27849324a3f984c6161513f  -
+'''
 

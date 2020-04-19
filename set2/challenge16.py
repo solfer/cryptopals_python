@@ -30,6 +30,7 @@ def f2(ciphertext):
 
     aes_ecb = AES.new(key, AES.MODE_ECB)
     plaintext = cbc_decrypt(aes_ecb,ciphertext,IV,validation=True)
+    print(plaintext)
     if ";admin=true;" in str(plaintext):
         return True
     else:
