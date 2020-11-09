@@ -1,2 +1,2 @@
 # cryptopals_python
-Solutions for the Cryptopals challenges (https://cryptopals.com) written in Python 3
+Solutions for (some of) the Cryptopals challenges (https://cryptopals.com) written in Python 3
